@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Pasal Police DLRP</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #1a1e29; color: #e1e6ed; margin: 0; padding: 15px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { text-align: center; color: #4ba3e3; margin-bottom: 5px; font-size: 22px; }
+        p.subtitle { text-align: center; color: #8b9bb4; font-size: 13px; margin-top: 0; margin-bottom: 20px; }
+        
+        .card { background: #242b3d; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .card h2 { color: #f39c12; margin-top: 0; font-size: 16px; border-bottom: 2px solid #34495e; padding-bottom: 8px; }
+        .card.berat h2 { color: #e74c3c; }
+        
+        .pasal-list { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        @media (min-width: 600px) { .pasal-list { grid-template-columns: 1fr 1fr; } }
+        
+        .pasal-item { background: #1d2331; padding: 10px; border-radius: 6px; display: flex; align-items: flex-start; cursor: pointer; border: 1px solid #2c3e50; transition: 0.2s; }
+        .pasal-item:hover { border-color: #3498db; }
+        .pasal-item input { margin-right: 10px; margin-top: 3px; cursor: pointer; width: 18px; height: 18px; }
+        .pasal-info { flex: 1; font-size: 13px; }
+        .pasal-info strong { color: #3498db; }
+        .pasal-detail { font-size: 11px; color: #a4b0be; margin-top: 3px; }
+        
+        /* Summary Section */
+        .summary-card { background: #2d3748; border: 2px solid #3182ce; }
+        .summary-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .summary-table th, .summary-table td { border: 1px solid #4a5568; padding: 8px; text-align: left; }
+        .summary-table th { background-color: #1a202c; color: #63b3ed; }
+        .total-row { background-color: #1a202c; font-weight: bold; color: #2ba640; }
+        
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 12px; color: #cbd5e0; margin-bottom: 4px; }
+        .input-group input { width: 100%; padding: 10px; background: #1a202c; border: 1px solid #4a5568; color: #fff; border-radius: 4px; font-size: 14px; }
+        .search-box { border-color: #f1c40f !important; }
+
+        .btn-copy { background: #3182ce; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
+        .btn-copy:hover { background: #2b6cb0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>KALKULATOR PASAL POLISI</h1>
+    <p class="subtitle">Dream Life Roleplay - Sistem Otomatis Kalkulasi Denda & Hukuman</p>
+
+    <!-- Data Suspect & Search Bar -->
+    <div class="card">
+        <div class="input-group">
+            <label for="suspectName">Nama Suspect / Tersangka:</label>
+            <input type="text" id="suspectName" placeholder="Masukkan nama suspect..." oninput="calculate()">
+        </div>
+        <div class="input-group" style="margin-bottom: 0;">
+            <label for="searchInput" style="color: #f1c40f; font-weight: bold;">🔍 Cari Pasal / Kata Kunci (Misal: peluru, bank, senjata):</label>
+            <input type="text" id="searchInput" class="search-box" placeholder="Ketik kata kunci untuk memfilter pasal..." oninput="filterPasal()">
+        </div>
+    </div>
+
+    <!-- Pelanggaran Sedang -->
+    <div class="card" id="cardSedang">
+        <h2>PELANGGARAN SEDANG</h2>
+        <div class="pasal-list" id="listSedang"></div>
+    </div>
+
+    <!-- Pelanggaran Berat -->
+    <div class="card berat" id="cardBerat">
+        <h2>PELANGGARAN BERAT</h2>
+        <div class="pasal-list" id="listBerat"></div>
+    </div>
+
+    <!-- Ringkasan Hasil -->
+    <div class="card summary-card">
+        <h2 style="color: #63b3ed;">RINGKASAN TUNTUTAN</h2>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>UU</th>
+                    <th>Pelanggaran</th>
+                    <th>Kat.</th>
+                    <th>Denda</th>
+                    <th>Hukuman</th>
+                </tr>
+            </thead>
+            <tbody id="summaryTableBody">
+                <tr><td colspan="5" style="text-align: center; color: #a0aec0;">Belum ada pasal yang dipilih</td></tr>
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="3">TOTAL TUNTUTAN</td>
+                    <td id="totalDenda">$0</td>
+                    <td id="totalHukuman">0 Bulan</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <button class="btn-copy" onclick="copyFormat()">📋 Copy Format Discord / Chat</button>
+    </div>
+</div>
+
+<script>
+const dataPasal = [
+    // SEDANG
+    { kat: "Sedang", uu: "1.1", nama: "Ujaran kebencian, tindakan/bicara tidak sopan terhadap pegawai pemerintah", denda: 90000, hukuman: 10 },
+    { kat: "Sedang", uu: "1.2", nama: "Upaya melindungi, menyembunyikan atau membantu pelaku tindak kriminal", denda: 100000, hukuman: 20 },
+    { kat: "Sedang", uu: "1.3", nama: "Upaya melawan petugas kepolisian", denda: 150000, hukuman: 15 },
+    { kat: "Sedang", uu: "1.4", nama: "Mencuri kendaraan warga", denda: 150000, hukuman: 10 },
+    { kat: "Sedang", uu: "1.5", nama: "Kepemilikan senjata api resmi Gunshop tanpa lisensi", denda: 200000, hukuman: 10 },
+    { kat: "Sedang", uu: "1.6", nama: "Penyalahgunaan senjata api/senjata tajam resmi Gunshop tanpa lisensi", denda: 100000, hukuman: 15 },
+    { kat: "Sedang", uu: "1.7", nama: "Berada di tempat ilegal secara hukum (Zona Merah)", denda: 150000, hukuman: 15 },
+    { kat: "Sedang", uu: "1.8", nama: "Berburu secara ilegal", denda: 100000, hukuman: 10 },
+    { kat: "Sedang", uu: "1.9", nama: "Memberikan informasi palsu kepada kepolisian", denda: 150000, hukuman: 10 },
+    { kat: "Sedang", uu: "2.1", nama: "Mencuri / merampas / membegal warga", denda: 150000, hukuman: 20 },
+    { kat: "Sedang", uu: "2.2", nama: "Membuat kerusuhan di tempat umum", denda: 190000, hukuman: 20 },
+    { kat: "Sedang", uu: "2.3", nama: "Imigran Gelap (Tidak mempunyai Identitas)", denda: 250000, hukuman: 15 },
+    { kat: "Sedang", uu: "2.3b", nama: "Membawa uang kotor 300.000-400.000", denda: 210000, hukuman: 15 },
+    { kat: "Sedang", uu: "2.4", nama: "Membawa uang kotor >400.000-1.000.000", denda: 230000, hukuman: 20 },
+    { kat: "Sedang", uu: "2.5", nama: "Membawa uang kotor >1.000.000", denda: 250000, hukuman: 25 },
+    { kat: "Sedang", uu: "2.6", nama: "Barang mentah ilegal <100 pcs", denda: 200000, hukuman: 25 },
+    { kat: "Sedang", uu: "2.7", nama: "Barang mentah ilegal 100-300 pcs", denda: 250000, hukuman: 30 },
+    { kat: "Sedang", uu: "2.8", nama: "Barang mentah ilegal >300 pcs", denda: 300000, hukuman: 35 },
+    { kat: "Sedang", uu: "2.9", nama: "Barang jadi ilegal <5 pcs", denda: 300000, hukuman: 25 },
+    { kat: "Sedang", uu: "3.1", nama: "Barang jadi ilegal >5 pcs", denda: 350000, hukuman: 35 },
+    { kat: "Sedang", uu: "3.2", nama: "Peluru ilegal <100 pcs ammo", denda: 200000, hukuman: 15 },
+    { kat: "Sedang", uu: "3.3", nama: "Peluru ilegal >100 pcs ammo", denda: 300000, hukuman: 20 },
+
+    // BERAT
+    { kat: "Berat", uu: "1.1", nama: "Menggunakan atribut pegawai pemerintah", denda: 250000, hukuman: 20 },
+    { kat: "Berat", uu: "1.2", nama: "Perampokan warung", denda: 135000, hukuman: 20 },
+    { kat: "Berat", uu: "1.3", nama: "Perampokan Bank Fleeca", denda: 400000, hukuman: 30 },
+    { kat: "Berat", uu: "1.4", nama: "Perampokan Bank Pasific", denda: 600000, hukuman: 35 },
+    { kat: "Berat", uu: "1.5", nama: "Penyerangan kepada warga", denda: 250000, hukuman: 20 },
+    { kat: "Berat", uu: "1.6", nama: "Penyerangan kepada pegawai pemerintah", denda: 300000, hukuman: 25 },
+    { kat: "Berat", uu: "1.7", nama: "Kepemilikan senjata ilegal", denda: 135000, hukuman: 15 },
+    { kat: "Berat", uu: "1.8", nama: "Kepemilikan senjata kepolisian", denda: 200000, hukuman: 20 },
+    { kat: "Berat", uu: "1.9", nama: "Penyanderaan terhadap warga", denda: 225000, hukuman: 15 },
+    { kat: "Berat", uu: "2.1", nama: "Penyanderaan terhadap pegawai pemerintah", denda: 275000, hukuman: 20 },
+    { kat: "Berat", uu: "2.2", nama: "Penodongan terhadap warga", denda: 150000, hukuman: 15 },
+    { kat: "Berat", uu: "2.3", nama: "Penodongan terhadap pegawai pemerintah", denda: 185000, hukuman: 20 },
+    { kat: "Berat", uu: "2.4", nama: "Penembakan di tempat umum", denda: 150000, hukuman: 15 },
+    { kat: "Berat", uu: "2.5", nama: "Menggunakan surat palsu", denda: 185000, hukuman: 15 },
+    { kat: "Berat", uu: "2.6", nama: "Upaya menghilangkan barang bukti", denda: 200000, hukuman: 25 },
+    { kat: "Berat", uu: "2.7", nama: "Peperangan antar gang", denda: 200000, hukuman: 30 },
+    { kat: "Berat", uu: "2.8", nama: "Transaksi barang haram/ilegal", denda: 300000, hukuman: 20 },
+    { kat: "Berat", uu: "2.9", nama: "Transaksi senjata ilegal kelas 1-2 <6", denda: 300000, hukuman: 30 },
+    { kat: "Berat", uu: "3.1", nama: "Transaksi senjata ilegal kelas 1-2 >6", denda: 400000, hukuman: 40 },
+    { kat: "Berat", uu: "3.2", nama: "Transaksi senjata ilegal kelas 3-4 <6", denda: 500000, hukuman: 35 },
+    { kat: "Berat", uu: "3.3", nama: "Transaksi senjata ilegal kelas 3-4 >6", denda: 600000, hukuman: 45 },
+    { kat: "Berat", uu: "3.4", nama: "Pembunuhan terhadap warga", denda: 400000, hukuman: 30 },
+    { kat: "Berat", uu: "3.5", nama: "Tindakan terorisme", denda: 0, hukuman: "Hukuman Mati" },
+    { kat: "Berat", uu: "3.6", nama: "Pembunuhan terhadap pegawai pemerintah", denda: 0, hukuman: "Hukuman Mati" },
+    { kat: "Berat", uu: "3.7", nama: "Pembunuhan terhadap petinggi pemerintah", denda: 0, hukuman: "Hukuman Mati" }
+];
+
+function renderList() {
+    const containerSedang = document.getElementById('listSedang');
+    const containerBerat = document.getElementById('listBerat');
+    containerSedang.innerHTML = '';
+    containerBerat.innerHTML = '';
+    
+    dataPasal.forEach((item, index) => {
+        const html = `
+            <label class="pasal-item" id="item-${index}">
+                <input type="checkbox" id="pasal-${index}" onchange="calculate()">
+                <div class="pasal-info">
+                    <strong>UU ${item.uu}</strong> - ${item.nama}
+                    <div class="pasal-detail">Denda: $${item.denda.toLocaleString('id-ID')} | Hukuman: ${typeof item.hukuman === 'number' ? item.hukuman + ' Bulan' : item.hukuman}</div>
+                </div>
+            </label>
+        `;
+        if (item.kat === "Sedang") containerSedang.innerHTML += html;
+        else containerBerat.innerHTML += html;
+    });
+}
+
+function filterPasal() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    
+    dataPasal.forEach((item, index) => {
+        const elem = document.getElementById(`item-${index}`);
+        const textContent = (item.uu + ' ' + item.nama + ' ' + item.kat).toLowerCase();
+        
+        if (textContent.includes(query)) {
+            elem.style.display = 'flex';
+        } else {
+            elem.style.display = 'none';
+        }
+    });
+}
+
+function calculate() {
+    const tbody = document.getElementById('summaryTableBody');
+    tbody.innerHTML = '';
+    
+    let totalDenda = 0;
+    let totalBulan = 0;
+    let isHukumanMati = false;
+    let selectedCount = 0;
+
+    dataPasal.forEach((item, index) => {
+        const checkbox = document.getElementById(`pasal-${index}`);
+        if (checkbox && checkbox.checked) {
+            selectedCount++;
+            totalDenda += item.denda;
+            if (typeof item.hukuman === 'number') {
+                totalBulan += item.hukuman;
+            } else {
+                isHukumanMati = true;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.uu}</td>
+                <td>${item.nama}</td>
+                <td>${item.kat}</td>
+                <td>$${item.denda.toLocaleString('id-ID')}</td>
+                <td>${typeof item.hukuman === 'number' ? item.hukuman + ' Bulan' : item.hukuman}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    });
+
+    if (selectedCount === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #a0aec0;">Belum ada pasal yang dipilih</td></tr>';
+    }
+
+    document.getElementById('totalDenda').innerText = '$' + totalDenda.toLocaleString('id-ID');
+    document.getElementById('totalHukuman').innerText = isHukumanMati ? "HUKUMAN MATI" : `${totalBulan} Bulan`;
+}
+
+function copyFormat() {
+    const name = document.getElementById('suspectName').value || 'Tersangka';
+    let text = `**[ TUNTUTAN KEPOLISIAN - DREAM LIFE RP ]**\n`;
+    text += `Nama Suspect: **${name}**\n\n`;
+    text += `**Pasal yang Dilanggar:**\n`;
+
+    let totalDenda = 0;
+    let totalBulan = 0;
+    let isHukumanMati = false;
+    let count = 0;
+
+    dataPasal.forEach((item, index) => {
+        const checkbox = document.getElementById(`pasal-${index}`);
+        if (checkbox && checkbox.checked) {
+            count++;
+            totalDenda += item.denda;
+            if (typeof item.hukuman === 'number') totalBulan += item.hukuman;
+            else isHukumanMati = true;
+
+            text += `${count}. [${item.kat}] UU ${item.uu} - ${item.nama} ($${item.denda.toLocaleString('id-ID')} / ${typeof item.hukuman === 'number' ? item.hukuman + ' Bulan' : item.hukuman})\n`;
+        }
+    });
+
+    if (count === 0) {
+        alert('Pilih pasal terlebih dahulu!');
+        return;
+    }
+
+    text += `\n**TOTAL TUNTUTAN:**\n`;
+    text += `- Total Denda: **$${totalDenda.toLocaleString('id-ID')}**\n`;
+    text += `- Total Hukuman: **${isHukumanMati ? "HUKUMAN MATI" : totalBulan + ' Bulan'}**`;
+
+    navigator.clipboard.writeText(text);
+    alert('Format tuntutan berhasil di-copy ke clipboard!');
+}
+
+renderList();
+</script>
+</body>
+</html>
