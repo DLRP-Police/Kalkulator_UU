@@ -56,7 +56,7 @@
         </div>
         
         <div class="input-group">
-            <label for="vehicleType" style="color: #2ecc71; font-weight: bold;">🚗 Tipe Kendaraan Suspect (Khusus Pelanggaran Ringan):</label>
+            <label for="vehicleType" style="color: #2ecc71; font-weight: bold;">🚗 Tipe Kendaraan Suspect (Pilih jika ada pelanggaran ringan):</label>
             <select id="vehicleType" onchange="updateRinganDenda(); calculate();">
                 <option value="motorDealer">Motor Dealer</option>
                 <option value="motorSport">Motor Sport</option>
@@ -192,6 +192,10 @@ function renderList() {
     
     const selectedVehicle = document.getElementById('vehicleType').value;
 
+    containerRingan.innerHTML = '';
+    containerSedang.innerHTML = '';
+    containerBerat.innerHTML = '';
+
     // Render Ringan
     dataPasalRingan.forEach((item, index) => {
         const dendaVal = item.denda[selectedVehicle];
@@ -268,7 +272,7 @@ function calculate() {
             selectedCount++;
             const currentDenda = item.denda[selectedVehicle];
             totalDenda += currentDenda;
-            maxSita = item.sita; // Mengambil sita kendaraan terbaru
+            maxSita = item.sita;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -324,28 +328,27 @@ function copyFormat() {
     const vehicleSelect = document.getElementById('vehicleType');
     const vehicleText = vehicleSelect.options[vehicleSelect.selectedIndex].text;
     
-    let text = `**[ TUNTUTAN KEPOLISIAN - DREAM LIFE RP ]**\n`;
-    text += `Nama Suspect: **${name}**\n`;
-    text += `Kendaraan: **${vehicleText}**\n\n`;
-    text += `**Pasal yang Dilanggar:**\n`;
-
     let totalDenda = 0;
     let totalBulan = 0;
     let maxSita = "";
     let isHukumanMati = false;
     let count = 0;
+    let hasRingan = false;
     const selectedVehicle = vehicleSelect.value;
+
+    let pasalText = "";
 
     // Ringan
     dataPasalRingan.forEach((item, index) => {
         const checkbox = document.getElementById(`pasal-ringan-${index}`);
         if (checkbox && checkbox.checked) {
             count++;
+            hasRingan = true;
             const currentDenda = item.denda[selectedVehicle];
             totalDenda += currentDenda;
             maxSita = item.sita;
 
-            text += `${count}. [Ringan] UU ${item.uu} - ${item.nama} ($${currentDenda.toLocaleString('id-ID')} / Sita: ${item.sita})\n`;
+            pasalText += `${count}. [Ringan] UU ${item.uu} - ${item.nama} ($${currentDenda.toLocaleString('id-ID')} / Sita: ${item.sita})\n`;
         }
     });
 
@@ -358,7 +361,7 @@ function copyFormat() {
             if (typeof item.hukuman === 'number') totalBulan += item.hukuman;
             else isHukumanMati = true;
 
-            text += `${count}. [${item.kat}] UU ${item.uu} - ${item.nama} ($${item.denda.toLocaleString('id-ID')} / ${typeof item.hukuman === 'number' ? item.hukuman + ' Bulan' : item.hukuman})\n`;
+            pasalText += `${count}. [${item.kat}] UU ${item.uu} - ${item.nama} ($${currentDenda.toLocaleString('id-ID')} / ${typeof item.hukuman === 'number' ? item.hukuman + ' Bulan' : item.hukuman})\n`;
         }
     });
 
@@ -367,12 +370,29 @@ function copyFormat() {
         return;
     }
 
+    // Pake ``` di awal dan akhir biar dapet style Codeblock Discord
+    let text = "```\n";
+    text += `**[ TUNTUTAN KEPOLISIAN - DREAM LIFE RP ]**\n`;
+    text += `Nama Suspect: **${name}**\n`;
+    
+    // HANYA MUNCULKAN KENDARAAN JIKA ADA PELANGGARAN RINGAN
+    if (hasRingan) {
+        text += `Kendaraan: **${vehicleText}**\n`;
+    }
+    
+    text += `\n**Pasal yang Dilanggar:**\n`;
+    text += pasalText;
+
     text += `\n**TOTAL TUNTUTAN:**\n`;
     text += `- Total Denda: **$${totalDenda.toLocaleString('id-ID')}**\n`;
     text += `- Total Hukuman: **${isHukumanMati ? "HUKUMAN MATI" : totalBulan + ' Bulan'}**\n`;
-    if (maxSita) {
+    
+    // HANYA MUNCULKAN DURASI SITA JIKA ADA PELANGGARAN RINGAN
+    if (hasRingan && maxSita) {
         text += `- Durasi Sita Kendaraan: **${maxSita}**\n`;
     }
+
+    text += "```";
 
     navigator.clipboard.writeText(text);
     alert('Format tuntutan berhasil di-copy ke clipboard!');
