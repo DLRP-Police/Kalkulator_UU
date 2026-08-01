@@ -361,7 +361,7 @@ function copyFormat() {
             if (typeof item.hukuman === 'number') totalBulan += item.hukuman;
             else isHukumanMati = true;
 
-            pasalText += `${count}. [${item.kat}] UU ${item.uu} - ${item.nama} ($${currentDenda.toLocaleString('id-ID')} / ${typeof item.hukuman === 'number' ? item.hukuman + ' Bulan' : item.hukuman})\n`;
+            pasalText += `${count}. [${item.kat}] UU ${item.uu} - ${item.nama} ($${item.denda.toLocaleString('id-ID')} / ${typeof item.hukuman === 'number' ? item.hukuman + ' Bulan' : item.hukuman})\n`;
         }
     });
 
@@ -370,9 +370,7 @@ function copyFormat() {
         return;
     }
 
-    // Pake ``` di awal dan akhir biar dapet style Codeblock Discord
-    let text = "```\n";
-    text += `**[ TUNTUTAN KEPOLISIAN - DREAM LIFE RP ]**\n`;
+    let text = `**[ TUNTUTAN KEPOLISIAN - DREAM LIFE RP ]**\n`;
     text += `Nama Suspect: **${name}**\n`;
     
     // HANYA MUNCULKAN KENDARAAN JIKA ADA PELANGGARAN RINGAN
@@ -391,8 +389,6 @@ function copyFormat() {
     if (hasRingan && maxSita) {
         text += `- Durasi Sita Kendaraan: **${maxSita}**\n`;
     }
-
-    text += "```";
 
     navigator.clipboard.writeText(text);
     alert('Format tuntutan berhasil di-copy ke clipboard!');
