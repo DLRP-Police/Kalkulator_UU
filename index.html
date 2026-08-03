@@ -15,6 +15,7 @@
         .card h2 { color: #f39c12; margin-top: 0; font-size: 16px; border-bottom: 2px solid #34495e; padding-bottom: 8px; }
         .card.ringan h2 { color: #2ecc71; }
         .card.berat h2 { color: #e74c3c; }
+        .card.sitaan h2 { color: #e67e22; }
         
         .pasal-list { display: grid; grid-template-columns: 1fr; gap: 8px; }
         @media (min-width: 600px) { .pasal-list { grid-template-columns: 1fr 1fr; } }
@@ -26,17 +27,24 @@
         .pasal-info strong { color: #3498db; }
         .pasal-detail { font-size: 11px; color: #a4b0be; margin-top: 3px; }
         
-        /* Summary Section */
+        /* Summary & Custom Table Section */
         .summary-card { background: #2d3748; border: 2px solid #3182ce; }
         .summary-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         .summary-table th, .summary-table td { border: 1px solid #4a5568; padding: 8px; text-align: left; }
         .summary-table th { background-color: #1a202c; color: #63b3ed; }
         .total-row { background-color: #1a202c; font-weight: bold; color: #2ba640; }
         
+        .sitaan-table input { width: 100%; padding: 6px 10px; background: #1d2331; border: 1px solid #4a5568; color: #fff; border-radius: 4px; font-size: 13px; }
+        
         .input-group { margin-bottom: 12px; }
         .input-group label { display: block; font-size: 12px; color: #cbd5e0; margin-bottom: 4px; }
         .input-group input, .input-group select { width: 100%; padding: 10px; background: #1a202c; border: 1px solid #4a5568; color: #fff; border-radius: 4px; font-size: 14px; }
         .search-box { border-color: #f1c40f !important; }
+
+        .btn-action { background: #27ae60; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; margin-top: 8px; }
+        .btn-action:hover { background: #219150; }
+        .btn-del { background: #c0392b; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-del:hover { background: #a93226; }
 
         .btn-copy { background: #3182ce; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
         .btn-copy:hover { background: #2b6cb0; }
@@ -89,6 +97,24 @@
     <div class="card berat" id="cardBerat">
         <h2>PELANGGARAN BERAT</h2>
         <div class="pasal-list" id="listBerat"></div>
+    </div>
+
+    <!-- Tabel Barang Sitaan -->
+    <div class="card sitaan">
+        <h2>📦 DAFTAR BARANG SITAAN</h2>
+        <table class="summary-table sitaan-table">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Nama Barang Sitaan</th>
+                    <th style="width: 40%;">Serial Number</th>
+                    <th style="width: 10%; text-align: center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="sitaanTableBody">
+                <!-- Baris default -->
+            </tbody>
+        </table>
+        <button class="btn-action" onclick="addSitaanRow()">+ Tambah Barang Sitaan</button>
     </div>
 
     <!-- Ringkasan Hasil -->
@@ -184,6 +210,17 @@ const dataPasalLain = [
     { kat: "Berat", uu: "3.6", nama: "Pembunuhan terhadap pegawai pemerintah", denda: 0, hukuman: "Hukuman Mati" },
     { kat: "Berat", uu: "3.7", nama: "Pembunuhan terhadap petinggi pemerintah", denda: 0, hukuman: "Hukuman Mati" }
 ];
+
+function addSitaanRow() {
+    const tbody = document.getElementById('sitaanTableBody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><input type="text" class="sitaan-nama" placeholder="Contoh: Micro SMG / Ganja"></td>
+        <td><input type="text" class="sitaan-sn" placeholder="Opsional (Kosongkan jika tdk ada)"></td>
+        <td style="text-align: center;"><button class="btn-del" onclick="this.closest('tr').remove()">Hapus</button></td>
+    `;
+    tbody.appendChild(tr);
+}
 
 function renderList() {
     const containerRingan = document.getElementById('listRingan');
@@ -370,7 +407,24 @@ function copyFormat() {
         return;
     }
 
-    let text = `**[ TUNTUTAN KEPOLISIAN - DREAM LIFE RP ]**\n`;
+    // Ambil Data Barang Sitaan
+    const sitaanNamaElems = document.querySelectorAll('.sitaan-nama');
+    const sitaanSnElems = document.querySelectorAll('.sitaan-sn');
+    let sitaanText = "";
+    let sitaanCount = 0;
+
+    sitaanNamaElems.forEach((elem, idx) => {
+        const namaBarang = elem.value.trim();
+        const snBarang = sitaanSnElems[idx].value.trim();
+        
+        if (namaBarang !== "") {
+            sitaanCount++;
+            const snDisplay = snBarang !== "" ? snBarang : "-";
+            sitaanText += `${sitaanCount}. ${namaBarang} (${snDisplay})\n`;
+        }
+    });
+
+    let text = `**[ DATA SUSPECT KRIMINAL - KEPOLISIAN DREAM LIFE ]**\n`;
     text += `Nama Suspect: **${name}**\n`;
     
     // HANYA MUNCULKAN KENDARAAN JIKA ADA PELANGGARAN RINGAN
@@ -380,6 +434,12 @@ function copyFormat() {
     
     text += `\n**Pasal yang Dilanggar:**\n`;
     text += pasalText;
+
+    // HANYA MUNCULKAN LIST BARANG SITAAN JIKA ADA BARANG YANG DIISI
+    if (sitaanCount > 0) {
+        text += `\n*List barang sitaan*\n`;
+        text += sitaanText;
+    }
 
     text += `\n**TOTAL TUNTUTAN:**\n`;
     text += `- Total Denda: **$${totalDenda.toLocaleString('id-ID')}**\n`;
@@ -394,6 +454,8 @@ function copyFormat() {
     alert('Format tuntutan berhasil di-copy ke clipboard!');
 }
 
+// Bikin 1 baris input barang sitaan secara default
+addSitaanRow();
 renderList();
 </script>
 </body>
